@@ -80,23 +80,13 @@ impl Interval {
 }
 
 pub fn insert(intervals: Vec<Vec<i32>>, new_interval: Vec<i32>) -> Vec<Vec<i32>> {
-    /*
-    let mut ints: Vec<Interval> = vec![];
-    for i in intervals {
-        ints.push(i.into());
-    }
-    */
-
     fn binary_combine(
         ints: &Vec<Vec<i32>>,
         inserting: Interval,
         start: usize,
         end: usize,
     ) -> Vec<Vec<i32>> {
-        println!("{:?} <> {:?}", start, end);
-
-        // todo handle end cases
-        // if start == 0, end >= ints
+        // println!("{:?} <> {:?}", start, end);
 
         // end and start pass or equal, then there is nothing to combine with,
         // so we need to just insert the new interval here
@@ -106,24 +96,74 @@ pub fn insert(intervals: Vec<Vec<i32>>, new_interval: Vec<i32>) -> Vec<Vec<i32>>
             return new_ray;
         }
 
-        /*
-        if start == 0 && end == 0 {
-            let mut new_ray = ints.clone();
-            new_ray.insert(0, inserting.to_vec());
-            return new_ray;
-        }
-        */
-
         let mid_index: usize = (start as f32 + ((end - start) as f32 * 0.5)) as usize;
         let mid_interval: Interval = Interval::from(ints[mid_index].clone());
 
         if Interval::overlaps(mid_interval, inserting) {
             // found place to insert, so combine and insert.
-            let new_combined = Interval::combine(mid_interval, inserting);
 
             let mut new_ray = ints.clone();
-            new_ray.remove(mid_index);
-            new_ray.insert(mid_index, new_combined.to_vec());
+            // new_ray.remove(mid_index);
+
+            let mut new_combined = Interval::combine(mid_interval, inserting);
+
+            // combine left until we can't combine or hit end
+            let mut final_insert: usize = mid_index;
+            let mut did_combine = false;
+
+            // println!("{:?} {:?} {:?}", new_ray, new_combined, final_insert);
+
+            loop {
+                if final_insert >= 0 && final_insert < new_ray.len() {
+                    let checking_interval = Interval::from(new_ray[final_insert].clone());
+                    if Interval::overlaps(new_combined, checking_interval) {
+                        did_combine = true;
+
+                        new_combined = Interval::combine(new_combined, checking_interval);
+
+                        /*
+                        println!(
+                            "ate left {:?} {:?}         {:?}",
+                            new_ray, final_insert, new_combined
+                        );
+                        */
+                        new_ray.remove(final_insert);
+
+                        if final_insert == 0 {
+                            break;
+                        } else {
+                            final_insert -= 1;
+                        }
+                    } else {
+                        if did_combine {
+                            final_insert += 1;
+                        }
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            // combine right until we can't combine or hit end
+            loop {
+                if final_insert < new_ray.len() {
+                    let checking_interval = Interval::from(new_ray[final_insert].clone());
+                    if Interval::overlaps(new_combined, checking_interval) {
+                        new_combined = Interval::combine(new_combined, checking_interval);
+                        new_ray.remove(final_insert);
+
+                        // println!("ate right {:?} {:?}", new_ray, final_insert);
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            // println!("inserting combined {:?} {:?}", new_ray, final_insert);
+            new_ray.insert(final_insert, new_combined.to_vec());
 
             // TODO check if the new interval can combine with multiple
             // continue checking until can't combine
@@ -147,12 +187,34 @@ pub fn insert(intervals: Vec<Vec<i32>>, new_interval: Vec<i32>) -> Vec<Vec<i32>>
         panic!("Should never happen");
     }
 
+    if intervals.len() == 0 {
+        return vec![new_interval];
+    }
+
     return binary_combine(&intervals, new_interval.into(), 0, intervals.len() - 1);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn insert_combine_empty() {
+        let list: Vec<Vec<i32>> = vec![];
+        let ins: Vec<i32> = vec![2, 3];
+        let ret = super::insert(list.clone(), ins);
+
+        assert_eq!(vec![vec![2, 3]], ret);
+    }
+
+    #[test]
+    fn insert_entire_into() {
+        let list: Vec<Vec<i32>> = vec![vec![1, 5]];
+        let ins: Vec<i32> = vec![2, 3];
+        let ret = super::insert(list.clone(), ins);
+
+        assert_eq!(vec![vec![1, 5]], ret);
+    }
 
     #[test]
     fn insert_combine_entire_mid() {
@@ -236,6 +298,39 @@ mod tests {
         let ret = super::insert(list.clone(), ins);
 
         assert_eq!(vec![vec![0, 10]], ret);
+    }
+
+    #[test]
+    fn insert_combine_some() {
+        let list: Vec<Vec<i32>> = vec![
+            vec![1, 2],
+            vec![3, 5],
+            vec![6, 7],
+            vec![8, 10],
+            vec![12, 16],
+        ];
+        let ins: Vec<i32> = vec![4, 8];
+        let ret = super::insert(list.clone(), ins);
+
+        assert_eq!(vec![vec![1, 2], vec![3, 10], vec![12, 16]], ret);
+    }
+
+    #[test]
+    fn insert_consume() {
+        let list: Vec<Vec<i32>> = vec![vec![2, 5], vec![6, 7], vec![8, 9]];
+        let ins: Vec<i32> = vec![0, 10];
+        let ret = super::insert(list.clone(), ins);
+
+        assert_eq!(vec![vec![0, 10]], ret);
+    }
+
+    #[test]
+    fn insert_more_consume() {
+        let list: Vec<Vec<i32>> = vec![vec![2, 4], vec![5, 7], vec![8, 10], vec![11, 13]];
+        let ins: Vec<i32> = vec![3, 6];
+        let ret = super::insert(list.clone(), ins);
+
+        assert_eq!(vec![vec![2, 7], vec![8, 10], vec![11, 13]], ret);
     }
 
     #[test]
