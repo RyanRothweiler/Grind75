@@ -57,7 +57,7 @@ pub fn is_balanced(root: Option<Rc<RefCell<TreeNode>>>) -> bool {
             }
 
             // At the end of the tree
-            // Sub one becaus this is not actually a node, so it doesn't add depth
+            // Sub one because this is not actually a node, so it doesn't add depth
             None => return SignalResult::MaxDepth(depth - 1),
         }
 
@@ -70,6 +70,4 @@ pub fn is_balanced(root: Option<Rc<RefCell<TreeNode>>>) -> bool {
 
         SignalResult::MaxDepth(_v) => return true,
     }
-
-    return false;
 }
