@@ -1,11 +1,10 @@
 pub fn decrypt(code: Vec<i32>, k: i32) -> Vec<i32> {
-    fn circular(code: &Vec<i32>, i: i32) -> i32 {
-        // println!("{:?}", i);
+    fn circular(i: i32, len: i32) -> usize {
+        return i.rem_euclid(len) as usize;
+    }
 
-        let md = i.rem_euclid(code.len() as i32) as usize;
-        // println!("{:?}", md);
-
-        return code[md];
+    fn get_circular(code: &Vec<i32>, i: i32) -> i32 {
+        return code[circular(i, code.len() as i32)];
     }
 
     let mut ans: Vec<i32> = vec![0; code.len()];
@@ -14,52 +13,33 @@ pub fn decrypt(code: Vec<i32>, k: i32) -> Vec<i32> {
         return ans;
     }
 
-    let mut dir: i32 = 1;
-    if k < 0 {
-        dir = -1;
-    }
-
-    let mut left: i32 = dir;
-    let mut right: i32 = k + dir;
-
-    let k = k.abs();
+    let mut left: i32 = 1;
+    let mut right: i32 = k.abs();
 
     let mut window: i32 = 0;
 
     //set window
-    for i in 0..k {
-        window += circular(&code, (i + 1) * dir);
+    for i in 0..k.abs() {
+        window += get_circular(&code, i + 1);
     }
 
-    if dir < 0 {
-        left -= 1;
-        right -= 1;
-    }
+    for _i in 0..code.len() {
+        if k > 0 {
+            ans[circular(left - 1, code.len() as i32)] = window;
+        } else {
+            ans[circular(right + 1, code.len() as i32)] = window;
+        }
 
-    println!("left{:?}, right{:?}", left, right);
+        right += 1;
 
-    for i in 0..code.len() {
-        ans[i as usize] = window;
-
-        let adding = circular(&code, right);
-        let removing = circular(&code, left);
+        let adding = get_circular(&code, right);
+        let removing = get_circular(&code, left);
 
         window += adding;
         window -= removing;
 
-        println!(
-            "adding {:?}({:?}) removing {:?}({:?}) window {:?}",
-            adding, right, removing, left, window
-        );
-
-        right += 1;
         left += 1;
-
-        // break;
     }
-
-    println!("{:?}", window);
-    // ans[k as usize] = window;
 
     return ans;
 }
@@ -70,10 +50,9 @@ mod tests {
 
     #[test]
     fn first() {
-        // assert_eq!(decrypt(vec![1, 2, 3, 4], 0), vec![0; 4]);
-        // assert_eq!(decrypt(vec![5, 7, 1, 4], 3), vec![12, 10, 16, 13]);
+        assert_eq!(decrypt(vec![1, 2, 3, 4], 0), vec![0; 4]);
+        assert_eq!(decrypt(vec![5, 7, 1, 4], 3), vec![12, 10, 16, 13]);
         assert_eq!(decrypt(vec![2, 4, 9, 3], -2), vec![12, 5, 6, 13]);
-        // panic!("");
     }
 
     #[test]
