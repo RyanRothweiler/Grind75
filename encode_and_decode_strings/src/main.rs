@@ -37,8 +37,6 @@ fn decode(input: String) -> Result<Vec<String>, StringDecodeError> {
         let start: usize = i;
 
         while chars[i] != SENTINEL {
-            println!("{:?}", chars[i]);
-
             i += 1;
 
             if i >= chars.len() {
